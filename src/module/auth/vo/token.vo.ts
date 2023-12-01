@@ -1,6 +1,6 @@
-import {ApiProperty} from "@midwayjs/swagger";
+import { ApiProperty } from '@midwayjs/swagger';
 
-export class TokenVo{
+export class TokenVo {
   @ApiProperty({ description: 'token的过期时间' })
   expire: number;
   @ApiProperty({ description: 'token' })

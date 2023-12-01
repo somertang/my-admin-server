@@ -1,11 +1,11 @@
-import {MidwayAppInfo} from '@midwayjs/core';
-import { CasbinRule, createAdapter  } from '@midwayjs/casbin-typeorm-adapter';
+import { MidwayAppInfo } from '@midwayjs/core';
+import { CasbinRule, createAdapter } from '@midwayjs/casbin-typeorm-adapter';
 import { createWatcher } from '@midwayjs/casbin-redis-adapter';
 import * as redisStore from 'cache-manager-ioredis';
 import { env } from 'process';
-import {EverythingSubscriber} from "../typeorm-event-subscriber";
-import {join} from "path";
-import {TokenConfig} from "@/interface/token.config";
+import { EverythingSubscriber } from '../typeorm-event-subscriber';
+import { join } from 'path';
+import { TokenConfig } from '@/interface/token.config';
 
 export default (appInfo: MidwayAppInfo) => ({
   // use for cookie sign key, should change to your own and keep security

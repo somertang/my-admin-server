@@ -1,9 +1,9 @@
-import {BaseEntity} from "./base.entity";
-import {Inject} from "@midwayjs/core";
-import {FindOptionsWhere, Repository} from "typeorm";
-import {Context} from "@midwayjs/koa";
+import { BaseEntity } from './base.entity';
+import { Inject } from '@midwayjs/core';
+import { FindOptionsWhere, Repository } from 'typeorm';
+import { Context } from '@midwayjs/koa';
 
-export abstract class BaseService<T extends BaseEntity>{
+export abstract class BaseService<T extends BaseEntity> {
   @Inject()
   ctx: Context;
 

@@ -1,18 +1,17 @@
 import { Provide } from '@midwayjs/core';
-import {UserEntity} from "../entity/user.entity";
-import { Repository } from "typeorm";
+import { UserEntity } from '../entity/user.entity';
+import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 // import { omit } from 'lodash';
-import {InjectEntityModel} from "@midwayjs/typeorm";
-import {BaseService} from "@/common/base.service";
-import {R} from "@/common/base.error";
-import {omit} from "lodash";
-import {UserVO} from "@/module/user/vo/user.vo";
+import { InjectEntityModel } from '@midwayjs/typeorm';
+import { BaseService } from '@/common/base.service';
+import { R } from '@/common/base.error';
+import { omit } from 'lodash';
+import { UserVO } from '@/module/user/vo/user.vo';
 // import {UserDto} from "@/module/user/dto/user.dto";
 
 @Provide()
-export class UserService extends BaseService<UserEntity>{
-
+export class UserService extends BaseService<UserEntity> {
   @InjectEntityModel(UserEntity)
   userModal: Repository<UserEntity>;
 
@@ -27,16 +26,16 @@ export class UserService extends BaseService<UserEntity>{
   async createUser(entity: UserEntity) {
     const { userName, userEmail, userMobile } = entity;
     let isExist = (await this.userModal.countBy({ userName })) > 0;
-    if(isExist){
-      throw R.error("当前用户名已存在");
+    if (isExist) {
+      throw R.error('当前用户名已存在');
     }
     isExist = (await this.userModal.countBy({ userMobile })) > 0;
-    if(isExist){
-      throw R.error("当前手机号码已存在");
+    if (isExist) {
+      throw R.error('当前手机号码已存在');
     }
     isExist = (await this.userModal.countBy({ userEmail })) > 0;
-    if(isExist){
-      throw R.error("当前邮箱地址已存在");
+    if (isExist) {
+      throw R.error('当前邮箱地址已存在');
     }
     // 添加用户的默认密码是123456，对密码进行加盐加密
     const password = bcrypt.hashSync('123456', 10);
@@ -45,27 +44,27 @@ export class UserService extends BaseService<UserEntity>{
     await this.userModal.save(entity);
 
     // 把entity中的password移除返回给前端
-    return omit(entity, ["userPassword"]) as UserVO;
+    return omit(entity, ['userPassword']) as UserVO;
   }
 
-  async editUser(entity: UserEntity):Promise<UserVO>{
+  async editUser(entity: UserEntity): Promise<UserVO> {
     const { userName, userEmail, userMobile, id } = entity;
     let user = await this.userModal.findOneBy({ userName });
-    if(user && user.id !== id){
-      throw R.error("当前用户名已存在");
+    if (user && user.id !== id) {
+      throw R.error('当前用户名已存在');
     }
     user = await this.userModal.findOneBy({ userMobile });
-    if(user && user.id !== id){
-      throw R.error("当前手机号码已存在");
+    if (user && user.id !== id) {
+      throw R.error('当前手机号码已存在');
     }
     user = await this.userModal.findOneBy({ userEmail });
-    if(user && user.id !== id){
-      throw R.error("当前邮箱地址已存在");
+    if (user && user.id !== id) {
+      throw R.error('当前邮箱地址已存在');
     }
 
     await this.userModal.save(entity);
     // 把entity中的password移除返回给前端
-    return omit(entity, ["userPassword"]) as UserVO;
+    return omit(entity, ['userPassword']) as UserVO;
   }
 
   // /**

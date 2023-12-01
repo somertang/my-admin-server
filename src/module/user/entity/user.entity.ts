@@ -1,8 +1,8 @@
-import {Column, Entity} from 'typeorm';
+import { Column, Entity } from 'typeorm';
 // import * as dayjs from 'dayjs';
 import { omit } from 'lodash';
-import {BaseEntity} from "@/common/base.entity";
-import {UserVO} from "@/module/user/vo/user.vo";
+import { BaseEntity } from '@/common/base.entity';
+import { UserVO } from '@/module/user/vo/user.vo';
 
 // const dateTransformer = {
 //   from: (value: Date | number) => {
@@ -12,7 +12,7 @@ import {UserVO} from "@/module/user/vo/user.vo";
 // };
 
 @Entity('my_user')
-export class UserEntity extends BaseEntity{
+export class UserEntity extends BaseEntity {
   @Column({
     name: 'user_name',
     comment: '用户名',
@@ -47,31 +47,31 @@ export class UserEntity extends BaseEntity{
   @Column({
     name: 'user_wechart',
     comment: '微信号',
-    nullable: true
+    nullable: true,
   })
   userWechart?: string;
   @Column({
     name: 'user_avatar',
     comment: '用户头像',
-    nullable: true
+    nullable: true,
   })
   userAvatar?: string;
   @Column({
     name: 'user_desc',
     comment: '个人描述',
-    nullable: true
+    nullable: true,
   })
   userDesc?: string;
   @Column({
     default: 0,
     name: 'user_lock',
-    comment: '锁定:1/0'
+    comment: '锁定:1/0',
   })
   userLock?: number;
   @Column({
     default: 1,
     name: 'user_enable',
-    comment: '启用:1/0'
+    comment: '启用:1/0',
   })
   userEnable?: number;
   toVO(): UserVO {

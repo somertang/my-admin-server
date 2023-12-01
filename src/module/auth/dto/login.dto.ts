@@ -1,9 +1,9 @@
-import {ApiProperty} from "@midwayjs/swagger";
-import {Rule, RuleType} from "@midwayjs/validate";
-import {requiredString} from "@/common/common.validate.rules";
-import {R} from "@/common/base.error";
+import { ApiProperty } from '@midwayjs/swagger';
+import { Rule, RuleType } from '@midwayjs/validate';
+import { requiredString } from '@/common/common.validate.rules';
+import { R } from '@/common/base.error';
 
-export class LoginDTO{
+export class LoginDTO {
   @ApiProperty({
     description: '登录账号',
   })
