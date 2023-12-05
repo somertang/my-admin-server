@@ -11,6 +11,7 @@ import { R } from '@/common/base.error';
 import * as bcrypt from 'bcryptjs';
 import * as NodeRSA from 'node-rsa';
 import { uuid } from '@/utils/uuid';
+import { RefreshDTO } from '../dto/refresh.dto';
 
 @Provide()
 export class AuthService {
@@ -23,6 +24,12 @@ export class AuthService {
   @Inject()
   redisService: RedisService;
 
+  /**
+   * “login”函数接收包含帐号和密码的“LoginDTO”对象，从数据库中检索相应的用户，使用私钥解密密码，将其与用户存储的密码进行比较，生成令牌和刷新令牌，并在返回“TokenVo”对象之前将它们存储在
+   * Redis 中。
+   * @param {LoginDTO} loginDto - {
+   * @returns 解析为 TokenVo 对象的 Promise。
+   */
   async login(loginDto: LoginDTO): Promise<TokenVo> {
     const { accountNumber } = loginDto;
     const user = await this.userModal
@@ -78,5 +85,37 @@ export class AuthService {
       refreshExpire,
       refreshToken,
     } as TokenVo;
+  }
+
+  async refreshToken(refreshDto: RefreshDTO): Promise<TokenVo> {
+    const userId = await this.redisService.get(
+      `refreshToken${refreshDto.refreshToken}`
+    );
+
+    if (!userId) {
+      throw R.error('刷新 token 失败');
+    }
+
+    /* `const {expire} = this.tokenConfig;` 行使用对象解构从 `tokenConfig` 对象中提取 `expire` 属性。 */
+    const { expire } = this.tokenConfig;
+
+    const token = uuid();
+
+    await this.redisService
+      .multi()
+      .set(`token${token}`, userId)
+      .expire(`token${token}`, expire)
+      .exec();
+
+    const refreshExpire = await this.redisService.ttl(
+      `refreshToken${refreshDto.refreshToken}`
+    );
+
+    return {
+      token,
+      expire,
+      refreshToken: refreshDto.refreshToken,
+      refreshExpire,
+    };
   }
 }

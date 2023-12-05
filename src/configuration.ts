@@ -10,11 +10,13 @@ import * as i18n from '@midwayjs/i18n';
 import * as captcha from '@midwayjs/captcha';
 import * as cache from '@midwayjs/cache';
 import { join } from 'path';
-// import { DefaultErrorFilter } from './filter/default.filter';
-// import { NotFoundFilter } from './filter/notfound.filter';
+import { DefaultErrorFilter } from './filter/default.filter';
+import { NotFoundFilter } from './filter/notfound.filter';
 import { ValidateErrorFilter } from './filter/validate.filter';
 import { CommonErrorFilter } from './filter/common.filter';
 import { ReportMiddleware } from './middleware/report.middleware';
+import { AuthMiddleware } from '@/middleware/auth.middleware';
+import { UnauthorizedFilter } from '@/filter/unauthorized.filter';
 
 @Configuration({
   imports: [
@@ -43,8 +45,14 @@ export class MainConfiguration {
 
   async onReady() {
     // add middleware
-    this.app.useMiddleware([ReportMiddleware]);
+    this.app.useMiddleware([ReportMiddleware, AuthMiddleware]);
     // add filter
-    this.app.useFilter([ValidateErrorFilter, CommonErrorFilter]);
+    this.app.useFilter([
+      ValidateErrorFilter,
+      CommonErrorFilter,
+      UnauthorizedFilter,
+      DefaultErrorFilter,
+      NotFoundFilter,
+    ]);
   }
 }
