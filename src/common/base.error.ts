@@ -1,6 +1,6 @@
 import { MidwayValidationError } from '@midwayjs/validate';
 import { CommonError } from './common.error';
-import {httpError} from "@midwayjs/core";
+import { httpError } from '@midwayjs/core';
 
 export class R {
   static error(message: string) {
