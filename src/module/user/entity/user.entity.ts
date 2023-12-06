@@ -3,6 +3,7 @@ import { Column, Entity } from 'typeorm';
 import { omit } from 'lodash';
 import { BaseEntity } from '@/common/base.entity';
 import { UserVO } from '@/module/user/vo/user.vo';
+import { FileEntity } from '@/module/file/entity/file.entity';
 
 // const dateTransformer = {
 //   from: (value: Date | number) => {
@@ -75,8 +76,9 @@ export class UserEntity extends BaseEntity {
   })
   userEnable?: number;
   toVO(): UserVO {
-    const userVO = omit<UserEntity>(this, ['password', 'avatar']) as UserVO;
     // userVO.avatarPath = this.avatarEntity?.filePath;
-    return userVO;
+    return omit<UserEntity>(this, ['userPassword']) as UserVO;
   }
+
+  avatarEntity?: FileEntity;
 }

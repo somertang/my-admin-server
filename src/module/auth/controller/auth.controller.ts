@@ -83,6 +83,7 @@ export class AuthController {
   }
 
   @Post('/refresh/token', { description: '刷新token' })
+  @NotLogin()
   async refreshToken(@Body(ALL) refreshData: RefreshDTO) {
     return await this.authService.refreshToken(refreshData);
   }

@@ -9,6 +9,7 @@ import * as casbin from '@midwayjs/casbin';
 import * as i18n from '@midwayjs/i18n';
 import * as captcha from '@midwayjs/captcha';
 import * as cache from '@midwayjs/cache';
+import * as upload from '@midwayjs/upload';
 import { join } from 'path';
 import { DefaultErrorFilter } from './filter/default.filter';
 import { NotFoundFilter } from './filter/notfound.filter';
@@ -28,6 +29,7 @@ import { UnauthorizedFilter } from '@/filter/unauthorized.filter';
     i18n,
     captcha,
     cache,
+    upload,
     {
       component: info,
       enabledEnvironment: ['local'],

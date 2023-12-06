@@ -1,13 +1,14 @@
-import { MidwayAppInfo } from '@midwayjs/core';
+import { MidwayAppInfo, MidwayConfig } from '@midwayjs/core';
 import { CasbinRule, createAdapter } from '@midwayjs/casbin-typeorm-adapter';
 import { createWatcher } from '@midwayjs/casbin-redis-adapter';
 import * as redisStore from 'cache-manager-ioredis';
 import { env } from 'process';
-import { EverythingSubscriber } from '../typeorm-event-subscriber';
+import { EverythingSubscriber } from '@/typeorm-event-subscriber';
 import { join } from 'path';
 import { TokenConfig } from '@/interface/token.config';
+import { MinioConfig } from '@/interface';
 
-export default (appInfo: MidwayAppInfo) => ({
+export default (appInfo: MidwayAppInfo): MidwayConfig => ({
   // use for cookie sign key, should change to your own and keep security
   keys: '1700975928749_530',
   koa: {
@@ -32,9 +33,9 @@ export default (appInfo: MidwayAppInfo) => ({
         entities: ['**/entity/*{.ts,.js}', CasbinRule],
         timezone: '+08:00',
         migrations: ['**/migration/*.ts', CasbinRule],
-        cli: {
-          migrationsDir: 'migration',
-        },
+        // cli: {
+        //   migrationsDir: 'migration',
+        // },
         subscribers: [EverythingSubscriber],
       },
     },
@@ -73,6 +74,14 @@ export default (appInfo: MidwayAppInfo) => ({
       },
     },
   },
+  minio: {
+    endPoint: env.MINIO_HOST || 'localhost',
+    port: env.MINIO_PORT ? Number(env.MINIO_PORT) : 9000,
+    useSSL: false,
+    accessKey: env.MINIO_ACCESS_KEY || 'minioadmin',
+    secretKey: env.MINIO_SECRET_KEY || 'minio123456',
+    bucketName: env.MINIO_BUCKET_NAME || 'my-admin',
+  } as MinioConfig,
   i18n: {
     // 把你的翻译文本放到这里
     localeTable: {
@@ -109,5 +118,14 @@ export default (appInfo: MidwayAppInfo) => ({
       pubClientName: 'node-casbin-official',
       subClientName: 'node-casbin-sub',
     }),
+  },
+  midwayLogger: {
+    clients: {
+      typeormLogger: {
+        fileLogName: 'midway-typeorm.log',
+        enableError: false,
+        level: 'info',
+      },
+    },
   },
 });

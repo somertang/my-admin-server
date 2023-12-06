@@ -1,18 +1,9 @@
-import {
-  ALL,
-  Body,
-  Controller,
-  Del,
-  Get,
-  Inject,
-  Param,
-  Post,
-  Put,
-  Query,
-} from '@midwayjs/core';
-import { UserService } from '../service/user.service';
-import { UserDto } from '../dto/user.dto';
-import { PageDTO } from '@/common/page.dto';
+import {ALL, Body, Controller, Del, Get, Inject, Param, Post, Put, Query,} from '@midwayjs/core';
+import {UserService} from '../service/user.service';
+import {UserDto} from '../dto/user.dto';
+import {PageDTO} from '@/common/page.dto';
+import {UserEntity} from '@/module/user/entity/user.entity';
+import {FindOptionsWhere} from 'typeorm';
 
 @Controller('/user')
 export class UserController {
@@ -26,14 +17,12 @@ export class UserController {
 
   @Get('/page')
   async page(@Query() pageParam: PageDTO) {
-    // const user = new UserEntity();
-    // user.userName = userParam.userName;
-    // user.userPassword = userParam.userPassword;
-    // user.userMobile = userParam.userMobile;
-    // user.userEmail = userParam.userEmail;
-    // user.userDesc = userParam.userDesc;
-    const result = await this.userService.page(pageParam.page, pageParam.size);
-    return result;
+    const query: FindOptionsWhere<UserEntity> = {};
+    return await this.userService.pageUser<UserEntity>(
+      pageParam.page,
+      pageParam.size,
+      query
+    );
   }
 
   @Put('/update')

@@ -1,19 +1,28 @@
-import { Provide } from '@midwayjs/core';
+import { ILogger, Inject, Provide } from '@midwayjs/core';
 import { UserEntity } from '../entity/user.entity';
-import { Repository } from 'typeorm';
+import { DataSource, FindOptionsWhere, Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 // import { omit } from 'lodash';
-import { InjectEntityModel } from '@midwayjs/typeorm';
+import { InjectDataSource, InjectEntityModel } from '@midwayjs/typeorm';
 import { BaseService } from '@/common/base.service';
 import { R } from '@/common/base.error';
 import { omit } from 'lodash';
 import { UserVO } from '@/module/user/vo/user.vo';
-// import {UserDto} from "@/module/user/dto/user.dto";
+import { FileEntity } from '@/module/file/entity/file.entity';
 
 @Provide()
 export class UserService extends BaseService<UserEntity> {
   @InjectEntityModel(UserEntity)
   userModal: Repository<UserEntity>;
+
+  @InjectEntityModel(FileEntity)
+  fileModal: Repository<FileEntity>;
+
+  @InjectDataSource()
+  defaultDataSource: DataSource;
+
+  @Inject()
+  logger: ILogger;
 
   getModel(): Repository<UserEntity> {
     return this.userModal;
@@ -38,8 +47,23 @@ export class UserService extends BaseService<UserEntity> {
       throw R.error('当前邮箱地址已存在');
     }
     // 添加用户的默认密码是123456，对密码进行加盐加密
-    const password = bcrypt.hashSync('123456', 10);
-    entity.userPassword = password;
+    entity.userPassword = bcrypt.hashSync('123456', 10);
+
+    await this.defaultDataSource.transaction(async entityManager => {
+      await entityManager.save(UserEntity, entity);
+
+      if (entity.userAvatar) {
+        await entityManager
+          .createQueryBuilder()
+          .update(FileEntity)
+          .set({
+            pkValue: entity.id,
+            pkName: 'my_user&user_avatar',
+          })
+          .where('id = :id', { id: entity.userAvatar })
+          .execute();
+      }
+    });
 
     await this.userModal.save(entity);
 
@@ -62,65 +86,85 @@ export class UserService extends BaseService<UserEntity> {
       throw R.error('当前邮箱地址已存在');
     }
 
+    const fileRecord = await this.fileModal.findOneBy({
+      pkValue: entity.userAvatar,
+      pkName: 'my_user&user_avatar',
+    });
+
+    this.defaultDataSource.transaction(async entityManager => {
+      if (fileRecord && !entity.userAvatar) {
+        await this.fileModal.remove(fileRecord);
+      } else if (
+        fileRecord &&
+        entity.userAvatar &&
+        fileRecord.id !== entity.userAvatar
+      ) {
+        await Promise.all([
+          entityManager.delete(FileEntity, fileRecord.id),
+          entityManager
+            .createQueryBuilder()
+            .update(FileEntity)
+            .set({
+              pkValue: fileRecord.id,
+              pkName: 'my_user&user_avatar',
+            })
+            .where('id = :id', { id: entity.userAvatar })
+            .execute(),
+        ]);
+      } else if (!fileRecord && entity.userAvatar) {
+        await entityManager
+          .createQueryBuilder()
+          .update(FileEntity)
+          .set({
+            pkValue: fileRecord.id,
+            pkName: 'my_user&user_avatar',
+          })
+          .where('id = :id', { id: entity.userAvatar })
+          .execute();
+      }
+    });
+
     await this.userModal.save(entity);
     // 把entity中的password移除返回给前端
     return omit(entity, ['userPassword']) as UserVO;
   }
 
-  // /**
-  //  * 创建用户
-  //  * @param user
-  //  */
-  // async createUser(user: UserEntity){
-  //   const result = await this.userModal.save(user);
-  //   return result;
-  // }
-  //
-  // /**
-  //  * 修改用户
-  //  * @param user
-  //  */
-  // async updateUser(user: UserEntity){
-  //   const result = await this.userModal.save(user);
-  //   return result;
-  // }
-  //
-  // /**
-  //  * 删除用户
-  //  * @param user
-  //  */
-  // async deleteUser(user: UserEntity){
-  //   const result = await this.userModal.remove(user);
-  //   return result;
-  // }
-  //
-  // /**
-  //  * 分页查询用户
-  //  * @param page
-  //  * @param pageSize
-  //  * @param where
-  //  */
-  // async pageUser(page: number, pageSize: number, where?: FindOptionsWhere<UserEntity>){
-  //   const order: any = { createdDate: 'desc' };
-  //   const [data, total] = await this.userModal.findAndCount({
-  //     order,
-  //     skip: page * pageSize,
-  //     take: pageSize,
-  //     where,
-  //   });
-  //   return { data, total };
-  // }
-  //
-  // /**
-  //  * 根据查询条件返回全部用户
-  //  * @param where
-  //  */
-  // async listUser(where?: FindOptionsWhere<UserEntity>){
-  //   const order: any = { createdDate: 'desc' };
-  //   const result = await this.userModal.find({
-  //     order,
-  //     where,
-  //   });
-  //   return result;
-  // }
+  async pageUser<T>(page = 0, pageSize = 10, where?: FindOptionsWhere<T>) {
+    this.logger.info(
+      this.userModal
+        .createQueryBuilder('t')
+        .leftJoinAndMapOne(
+          't.avatarEntity',
+          FileEntity,
+          'file',
+          'file.pkValue = t.id and file.pkName = "my_user&user_avatar"'
+        )
+        .where(where)
+        .skip(page * pageSize)
+        .take(pageSize)
+        .orderBy('t.created_date', 'DESC')
+        .getSql()
+    );
+
+    const [data, total] = await this.userModal
+      .createQueryBuilder('t')
+      .leftJoinAndMapOne(
+        't.avatarEntity',
+        FileEntity,
+        'file',
+        'file.pkValue = t.id and file.pkName = "my_user&user_avatar"'
+      )
+      .where(where)
+      .skip(page * pageSize)
+      // .take(pageSize)
+      .orderBy('t.created_date', 'DESC')
+      .getManyAndCount();
+
+    this.logger.info(total);
+
+    return {
+      data: data.map(item => item.toVO()),
+      total,
+    };
+  }
 }
