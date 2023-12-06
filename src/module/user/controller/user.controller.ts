@@ -1,9 +1,20 @@
-import {ALL, Body, Controller, Del, Get, Inject, Param, Post, Put, Query,} from '@midwayjs/core';
-import {UserService} from '../service/user.service';
-import {UserDto} from '../dto/user.dto';
-import {PageDTO} from '@/common/page.dto';
-import {UserEntity} from '@/module/user/entity/user.entity';
-import {FindOptionsWhere} from 'typeorm';
+import {
+  ALL,
+  Body,
+  Controller,
+  Del,
+  Get,
+  Inject,
+  Param,
+  Post,
+  Put,
+  Query,
+} from '@midwayjs/core';
+import { UserService } from '../service/user.service';
+import { UserDto } from '../dto/user.dto';
+import { PageDTO } from '@/common/page.dto';
+import { UserEntity } from '@/module/user/entity/user.entity';
+import { FindOptionsWhere } from 'typeorm';
 
 @Controller('/user')
 export class UserController {

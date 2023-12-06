@@ -1,12 +1,12 @@
-import {Provide} from '@midwayjs/decorator';
-import {InjectDataSource, InjectEntityModel} from '@midwayjs/typeorm';
-import {DataSource, Repository} from 'typeorm';
-import {BaseService} from '@/common/base.service';
-import {FileEntity} from '../entity/file.entity';
-import {MinioConfig} from '@/interface';
-import {Config, Inject} from '@midwayjs/core';
-import {MinioClient} from '@/autoload/minio.autoload';
-import {UploadFileInfo} from '@midwayjs/upload';
+import { Provide } from '@midwayjs/decorator';
+import { InjectDataSource, InjectEntityModel } from '@midwayjs/typeorm';
+import { DataSource, Repository } from 'typeorm';
+import { BaseService } from '@/common/base.service';
+import { FileEntity } from '../entity/file.entity';
+import { MinioConfig } from '@/interface';
+import { Config, Inject } from '@midwayjs/core';
+import { MinioClient } from '@/autoload/minio.autoload';
+import { UploadFileInfo } from '@midwayjs/upload';
 
 @Provide()
 export class FileService extends BaseService<FileEntity> {
