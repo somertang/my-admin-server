@@ -143,7 +143,7 @@ export default (appInfo: MidwayAppInfo): MidwayConfig => ({
     secure: true,
     auth: {
       user: env.MAIL_USER || 'somertang@foxmail.com',
-      pass: env.MAIL_PASS || 'vhouwkdqemmxjdch',
+      pass: env.MAIL_PASS || '',
     },
   } as MailConfig,
 });
