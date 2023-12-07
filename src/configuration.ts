@@ -1,4 +1,4 @@
-import { Configuration, App } from '@midwayjs/core';
+import { Configuration, App, Inject } from '@midwayjs/core';
 import * as koa from '@midwayjs/koa';
 import * as validate from '@midwayjs/validate';
 import * as info from '@midwayjs/info';
@@ -10,6 +10,7 @@ import * as i18n from '@midwayjs/i18n';
 import * as captcha from '@midwayjs/captcha';
 import * as cache from '@midwayjs/cache';
 import * as upload from '@midwayjs/upload';
+import * as bull from '@midwayjs/bull';
 import { join } from 'path';
 import { DefaultErrorFilter } from './filter/default.filter';
 import { NotFoundFilter } from './filter/notfound.filter';
@@ -30,6 +31,7 @@ import { UnauthorizedFilter } from '@/filter/unauthorized.filter';
     captcha,
     cache,
     upload,
+    bull,
     {
       component: info,
       enabledEnvironment: ['local'],
@@ -45,6 +47,9 @@ export class MainConfiguration {
   @App('koa')
   app: koa.Application;
 
+  @Inject()
+  bullFramework: bull.Framework;
+
   async onReady() {
     // add middleware
     this.app.useMiddleware([ReportMiddleware, AuthMiddleware]);
@@ -56,5 +61,12 @@ export class MainConfiguration {
       DefaultErrorFilter,
       NotFoundFilter,
     ]);
+  }
+
+  async onServerReady() {
+    // 获取 Processor 相关的队列
+    const clearQueue = this.bullFramework.getQueue('clear_file');
+    // 立即执行这个任务
+    await clearQueue.runJob(null);
   }
 }

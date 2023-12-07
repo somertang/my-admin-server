@@ -14,6 +14,16 @@ export interface MinioConfig {
   bucketName: string;
 }
 
+export interface MailConfig {
+  host: string;
+  port: number;
+  secure: boolean;
+  auth: {
+    user: string;
+    pass: string;
+  };
+}
+
 interface UserContext {
   userId: string;
   refreshToken: string;

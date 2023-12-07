@@ -3,12 +3,12 @@ import { BaseEntity } from '@/common/base.entity';
 
 @Entity('my_file')
 export class FileEntity extends BaseEntity {
-  @Column({ comment: '文件名' })
+  @Column({ name: 'file_name', comment: '文件名' })
   fileName?: string;
-  @Column({ comment: '文件路径' })
+  @Column({ name: 'file_path', comment: '文件路径' })
   filePath?: string;
-  @Column({ comment: '外健名称', nullable: true })
+  @Column({ name: 'pk_name', comment: '外健名称', nullable: true })
   pkName: string;
-  @Column({ comment: '外健值', nullable: true })
+  @Column({ name: 'pk_value', comment: '外健值', nullable: true })
   pkValue?: string;
 }

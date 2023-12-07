@@ -9,6 +9,10 @@ import { R } from '@/common/base.error';
 import { omit } from 'lodash';
 import { UserVO } from '@/module/user/vo/user.vo';
 import { FileEntity } from '@/module/file/entity/file.entity';
+import { RedisService } from '@midwayjs/redis';
+import { MailService } from '@/common/mail.service';
+import { UserDto } from '@/module/user/dto/user.dto';
+import { uuid } from '@/utils/uuid';
 
 @Provide()
 export class UserService extends BaseService<UserEntity> {
@@ -22,6 +26,12 @@ export class UserService extends BaseService<UserEntity> {
   defaultDataSource: DataSource;
 
   @Inject()
+  redisService: RedisService;
+
+  @Inject()
+  mailService: MailService;
+
+  @Inject()
   logger: ILogger;
 
   getModel(): Repository<UserEntity> {
@@ -30,10 +40,11 @@ export class UserService extends BaseService<UserEntity> {
 
   /**
    * 创建用户
-   * @param entity
+   * @param userDto
    */
-  async createUser(entity: UserEntity) {
-    const { userName, userEmail, userMobile } = entity;
+  async createUser(userDto: UserDto) {
+    const entity = userDto.toEntity();
+    const { userName, userEmail, userMobile } = userDto;
     let isExist = (await this.userModal.countBy({ userName })) > 0;
     if (isExist) {
       throw R.error('当前用户名已存在');
@@ -46,8 +57,20 @@ export class UserService extends BaseService<UserEntity> {
     if (isExist) {
       throw R.error('当前邮箱地址已存在');
     }
-    // 添加用户的默认密码是123456，对密码进行加盐加密
-    entity.userPassword = bcrypt.hashSync('123456', 10);
+
+    const emailCaptcha = await this.redisService.get(
+      `emailCaptcha:${userEmail}`
+    );
+
+    if (emailCaptcha !== userDto.emailCaptcha) {
+      throw R.error('邮箱验证码错误或已生效');
+    }
+
+    // 随机生成密码，并发送到对应的邮箱中。
+    const password = uuid();
+
+    // 添加用户，对密码进行加盐加密
+    entity.userPassword = bcrypt.hashSync(password, 10);
 
     await this.defaultDataSource.transaction(async entityManager => {
       await entityManager.save(UserEntity, entity);
@@ -63,9 +86,18 @@ export class UserService extends BaseService<UserEntity> {
           .where('id = :id', { id: entity.userAvatar })
           .execute();
       }
-    });
 
-    await this.userModal.save(entity);
+      await this.mailService.sendMail({
+        to: userEmail,
+        subject: 'my-admin平台账号创建成功',
+        html: `<div>
+        <p><span style="color:#5867dd;">${userDto.nickName}</span>，你的账号已开通成功</p>
+        <p>登录地址：<a href="https://myadmin.cn/user/login">https://myadmin.cn/user/login</a></p>
+        <p>登录账号：${userEmail}</p>
+        <p>登录密码：${password}</p>
+        </div>`,
+      });
+    });
 
     // 把entity中的password移除返回给前端
     return omit(entity, ['userPassword']) as UserVO;
@@ -91,7 +123,7 @@ export class UserService extends BaseService<UserEntity> {
       pkName: 'my_user&user_avatar',
     });
 
-    this.defaultDataSource.transaction(async entityManager => {
+    await this.defaultDataSource.transaction(async entityManager => {
       if (fileRecord && !entity.userAvatar) {
         await this.fileModal.remove(fileRecord);
       } else if (
@@ -116,7 +148,7 @@ export class UserService extends BaseService<UserEntity> {
           .createQueryBuilder()
           .update(FileEntity)
           .set({
-            pkValue: fileRecord.id,
+            pkValue: entity.id,
             pkName: 'my_user&user_avatar',
           })
           .where('id = :id', { id: entity.userAvatar })
@@ -136,14 +168,15 @@ export class UserService extends BaseService<UserEntity> {
         .leftJoinAndMapOne(
           't.avatarEntity',
           FileEntity,
-          'file',
-          'file.pkValue = t.id and file.pkName = "my_user&user_avatar"'
+          'f',
+          'f.pk_value = t.id and f.pk_name = "my_user&user_avatar"'
         )
         .where(where)
+        .orderBy('t.created_date', 'DESC')
         .skip(page * pageSize)
         .take(pageSize)
-        .orderBy('t.created_date', 'DESC')
-        .getSql()
+        .getSql(),
+      'ddd'
     );
 
     const [data, total] = await this.userModal
@@ -151,20 +184,24 @@ export class UserService extends BaseService<UserEntity> {
       .leftJoinAndMapOne(
         't.avatarEntity',
         FileEntity,
-        'file',
-        'file.pkValue = t.id and file.pkName = "my_user&user_avatar"'
+        'f',
+        'f.pk_value = t.id and f.pk_name = "my_user&user_avatar"'
       )
       .where(where)
-      .skip(page * pageSize)
-      // .take(pageSize)
+      .offset(page * pageSize)
+      .limit(pageSize)
       .orderBy('t.created_date', 'DESC')
       .getManyAndCount();
 
-    this.logger.info(total);
+    this.logger.info(data, 'ss');
 
     return {
       data: data.map(item => item.toVO()),
       total,
     };
+  }
+
+  async getByEmail(email: string) {
+    return await this.userModal.findOneBy({ userEmail: email });
   }
 }

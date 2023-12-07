@@ -6,7 +6,7 @@ import { env } from 'process';
 import { EverythingSubscriber } from '@/typeorm-event-subscriber';
 import { join } from 'path';
 import { TokenConfig } from '@/interface/token.config';
-import { MinioConfig } from '@/interface';
+import { MailConfig, MinioConfig } from '@/interface';
 
 export default (appInfo: MidwayAppInfo): MidwayConfig => ({
   // use for cookie sign key, should change to your own and keep security
@@ -128,4 +128,22 @@ export default (appInfo: MidwayAppInfo): MidwayConfig => ({
       },
     },
   },
+  bull: {
+    defaultQueueOptions: {
+      redis: {
+        port: 6379, // Redis port
+        host: env.REDIS_HOST || 'localhost', // Redis host
+        password: env.REDIS_PASSWORD || '',
+      },
+    },
+  },
+  mail: {
+    host: env.MAIL_HOST || 'smtp.qq.com',
+    port: env.MAIL_PORT ? Number(env.MAIL_PORT) : 465,
+    secure: true,
+    auth: {
+      user: env.MAIL_USER || 'somertang@foxmail.com',
+      pass: env.MAIL_PASS || 'vhouwkdqemmxjdch',
+    },
+  } as MailConfig,
 });

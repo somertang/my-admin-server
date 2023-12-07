@@ -31,4 +31,8 @@ export class UserDto extends BaseDTO<UserEntity> {
   @ApiProperty({ description: '性别' })
   @Rule(RuleType.number())
   sex?: number;
+
+  @ApiProperty({ description: '邮箱验证码' })
+  @Rule(RuleType.string())
+  emailCaptcha?: string;
 }

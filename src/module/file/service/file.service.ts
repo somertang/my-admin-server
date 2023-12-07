@@ -65,9 +65,11 @@ export class FileService extends BaseService<FileEntity> {
 
     const records = await this.fileModel
       .createQueryBuilder()
-      .where('createDate < :date', { date: curDate })
-      .andWhere('pkValue is null')
+      .where('created_date < :date', { date: curDate })
+      .andWhere('pk_value is null')
       .getMany();
+
+    console.log(records, 'dd');
 
     await this.defaultDataSource.transaction(async manager => {
       await manager.remove(FileEntity, records);
