@@ -78,8 +78,8 @@ export default (appInfo: MidwayAppInfo): MidwayConfig => ({
     endPoint: env.MINIO_HOST || 'localhost',
     port: env.MINIO_PORT ? Number(env.MINIO_PORT) : 9000,
     useSSL: false,
-    accessKey: env.MINIO_ACCESS_KEY || 'minioadmin',
-    secretKey: env.MINIO_SECRET_KEY || 'minio123456',
+    accessKey: env.MINIO_ACCESS_KEY || '',
+    secretKey: env.MINIO_SECRET_KEY || '',
     bucketName: env.MINIO_BUCKET_NAME || 'my-admin',
   } as MinioConfig,
   i18n: {
@@ -142,7 +142,7 @@ export default (appInfo: MidwayAppInfo): MidwayConfig => ({
     port: env.MAIL_PORT ? Number(env.MAIL_PORT) : 465,
     secure: true,
     auth: {
-      user: env.MAIL_USER || 'somertang@foxmail.com',
+      user: env.MAIL_USER || '',
       pass: env.MAIL_PASS || '',
     },
   } as MailConfig,
