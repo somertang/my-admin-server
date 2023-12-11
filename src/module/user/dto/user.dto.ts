@@ -35,4 +35,7 @@ export class UserDto extends BaseDTO<UserEntity> {
   @ApiProperty({ description: '邮箱验证码' })
   @Rule(RuleType.string())
   emailCaptcha?: string;
+
+  @Rule(RuleType.array().items(RuleType.string()))
+  roleIds?: string[];
 }

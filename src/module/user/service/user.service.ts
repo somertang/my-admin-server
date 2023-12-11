@@ -13,6 +13,8 @@ import { RedisService } from '@midwayjs/redis';
 import { MailService } from '@/common/mail.service';
 import { UserDto } from '@/module/user/dto/user.dto';
 import { uuid } from '@/utils/uuid';
+import { UserRoleEntity } from '@/module/user/entity/user.role.entity';
+import { RoleEntity } from '@/module/role/entity/role.entity';
 
 @Provide()
 export class UserService extends BaseService<UserEntity> {
@@ -21,6 +23,9 @@ export class UserService extends BaseService<UserEntity> {
 
   @InjectEntityModel(FileEntity)
   fileModal: Repository<FileEntity>;
+
+  @InjectEntityModel(UserRoleEntity)
+  userRoleModal: Repository<UserRoleEntity>;
 
   @InjectDataSource()
   defaultDataSource: DataSource;
@@ -87,6 +92,16 @@ export class UserService extends BaseService<UserEntity> {
           .execute();
       }
 
+      await entityManager.save(
+        UserRoleEntity,
+        userDto.roleIds.map(roleId => {
+          const userRole = new UserRoleEntity();
+          userRole.roleId = roleId;
+          userRole.userId = entity.id;
+          return userRole;
+        })
+      );
+
       await this.mailService.sendMail({
         to: userEmail,
         subject: 'my-admin平台账号创建成功',
@@ -103,8 +118,9 @@ export class UserService extends BaseService<UserEntity> {
     return omit(entity, ['userPassword']) as UserVO;
   }
 
-  async editUser(entity: UserEntity): Promise<UserVO> {
-    const { userName, userEmail, userMobile, id } = entity;
+  async editUser(userDto: UserDto): Promise<UserVO> {
+    const entity = userDto.toEntity();
+    const { userName, userEmail, userMobile, id, nickName, sex } = entity;
     let user = await this.userModal.findOneBy({ userName });
     if (user && user.id !== id) {
       throw R.error('当前用户名已存在');
@@ -123,7 +139,34 @@ export class UserService extends BaseService<UserEntity> {
       pkName: 'my_user&user_avatar',
     });
 
+    const userRolesMap = await this.userRoleModal.findBy({
+      userId: user.id,
+    });
+
     await this.defaultDataSource.transaction(async entityManager => {
+      Promise.all([
+        entityManager
+          .createQueryBuilder()
+          .update(UserEntity)
+          .set({
+            nickName,
+            userMobile,
+            sex,
+          })
+          .where('id = :id', { id: userDto.id })
+          .execute(),
+        entityManager.remove(UserRoleEntity, userRolesMap),
+        entityManager.save(
+          UserRoleEntity,
+          userDto.roleIds.map(roleId => {
+            const userRole = new UserRoleEntity();
+            userRole.roleId = roleId;
+            userRole.userId = userDto.id;
+            return userRole;
+          })
+        ),
+      ]);
+
       if (fileRecord && !entity.userAvatar) {
         await this.fileModal.remove(fileRecord);
       } else if (
@@ -203,5 +246,22 @@ export class UserService extends BaseService<UserEntity> {
 
   async getByEmail(email: string) {
     return await this.userModal.findOneBy({ userEmail: email });
+  }
+
+  async getRoleIdsByUserId(userId: string) {
+    const query = this.userModal.createQueryBuilder('t');
+
+    const user = (await query
+      .where('t.id = :id', { id: userId })
+      .leftJoinAndSelect(UserRoleEntity, 'userRole', 't.id = userRole.userId')
+      .leftJoinAndMapMany(
+        't.roles',
+        RoleEntity,
+        'role',
+        'role.id = userRole.roleId'
+      )
+      .getOne()) as unknown as UserVO;
+
+    return user?.roles?.map(o => o.id) || [];
   }
 }

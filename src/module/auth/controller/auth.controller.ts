@@ -96,8 +96,7 @@ export class AuthController {
 
   @Get('/current/user', { description: '获取当前登录用户信息' })
   async currentUser() {
-    const user = await this.userService.getById(this.ctx.userInfo.userId);
-    return user.toVO();
+    return await this.authService.getUserById(this.ctx.userInfo.userId);
   }
 
   @Post('/send/reset/password/email')

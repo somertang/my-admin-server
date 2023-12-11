@@ -4,6 +4,7 @@ import { omit } from 'lodash';
 import { BaseEntity } from '@/common/base.entity';
 import { UserVO } from '@/module/user/vo/user.vo';
 import { FileEntity } from '@/module/file/entity/file.entity';
+import { RoleEntity } from '@/module/role/entity/role.entity';
 
 // const dateTransformer = {
 //   from: (value: Date | number) => {
@@ -77,8 +78,14 @@ export class UserEntity extends BaseEntity {
   userEnable?: number;
   toVO(): UserVO {
     // userVO.avatarPath = this.avatarEntity?.filePath;
-    return omit<UserEntity>(this, ['userPassword']) as UserVO;
+    const userVO = omit<UserEntity>(this, [
+      'userPassword',
+      'userAvatar',
+    ]) as UserVO;
+    userVO.avatarPath = this.avatarEntity?.filePath;
+    return userVO;
   }
 
   avatarEntity?: FileEntity;
+  roles: RoleEntity[];
 }

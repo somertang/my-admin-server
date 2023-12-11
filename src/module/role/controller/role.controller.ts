@@ -6,13 +6,15 @@ import {
   Post,
   Provide,
   Query,
-  ALL,
   Put,
   Param,
   Del,
 } from '@midwayjs/decorator';
 import { RoleDTO } from '../dto/role.dto';
 import { RoleService } from '../service/role.service';
+import { RoleMenuDto } from '@/module/role/dto/role.menu.dto';
+import { RolePageDto } from '@/module/role/dto/role.page.dto';
+import { R } from '@/common/base.error';
 
 @Provide()
 @Controller('/role')
@@ -20,36 +22,47 @@ export class RoleController {
   @Inject()
   roleService: RoleService;
 
-  @Post('/', { description: '新建' })
-  async create(@Body(ALL) data: RoleDTO) {
-    return await this.roleService.create(data.toEntity());
+  @Post('/', { description: '创建角色' })
+  async create(@Body() data: RoleDTO) {
+    return await this.roleService.createRole(data);
   }
 
-  @Put('/', { description: '编辑' })
-  async edit(@Body(ALL) data: RoleDTO) {
-    const role = await this.roleService.getById(data.id);
-    // update
-    return await this.roleService.edit(role);
+  @Put('/', { description: '更新角色' })
+  async update(@Body() data: RoleDTO) {
+    return await this.roleService.editRole(data);
   }
 
-  @Del('/:id', { description: '删除' })
-  async remove(@Param('id') id: string) {
-    const role = await this.roleService.getById(id);
-    await this.roleService.remove(role);
+  @Del('/:id', { description: '删除角色' })
+  async remove(
+    @Param('id')
+    id: string
+  ) {
+    if (!id) {
+      throw R.validateError('id不能为空');
+    }
+    return await this.roleService.removeRole(id);
   }
 
-  @Get('/:id', { description: '根据id查询' })
-  async getById(@Param('id') id: string) {
-    return await this.roleService.getById(id);
+  @Get('/page', { description: '分页获取角色列表' })
+  async page(@Query() rolePageDTO: RolePageDto) {
+    return await this.roleService.getRoleListByPage(rolePageDTO);
   }
 
-  @Get('/page', { description: '分页查询' })
-  async page(@Query('page') page: number, @Query('size') size: number) {
-    return await this.roleService.page(page, size);
+  @Post('/alloc/menu', { description: '角色分配菜单' })
+  async allocMenu(@Body() roleMenuDTO: RoleMenuDto) {
+    return await this.roleService.allocMenu(
+      roleMenuDTO.roleId,
+      roleMenuDTO.menuIds
+    );
   }
 
-  @Get('/list', { description: '查询全部' })
+  @Get('/list', { description: '获取角色列表' })
   async list() {
     return await this.roleService.list();
+  }
+
+  @Get('/menu/list', { description: '根据角色id获取菜单列表' })
+  async getMenusByRoleId(@Query('id') id: string) {
+    return (await this.roleService.getMenusByRoleId(id)).map(o => o.menuId);
   }
 }

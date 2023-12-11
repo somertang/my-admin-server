@@ -48,8 +48,7 @@ export class UserController {
 
   @Put('/update')
   async updateUser(@Body(ALL) userParam: UserDto) {
-    console.log(userParam.toEntity(), 'ss');
-    return await this.userService.editUser(userParam.toEntity());
+    return await this.userService.editUser(userParam);
   }
 
   @Del('/delete/:id')

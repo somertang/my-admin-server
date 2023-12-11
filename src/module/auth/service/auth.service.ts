@@ -1,5 +1,5 @@
 import { Provide } from '@midwayjs/decorator';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { UserEntity } from '@/module/user/entity/user.entity';
 import { InjectDataSource, InjectEntityModel } from '@midwayjs/typeorm';
 import { TokenConfig } from '@/interface/token.config';
@@ -13,11 +13,25 @@ import * as NodeRSA from 'node-rsa';
 import { uuid } from '@/utils/uuid';
 import { RefreshDTO } from '../dto/refresh.dto';
 import { ResetPasswordDTO } from '@/module/auth/dto/reset.password';
+import { UserRoleEntity } from '@/module/user/entity/user.role.entity';
+import { RoleMenuEntity } from '@/module/role/entity/role.menu.entity';
+import { FileEntity } from '@/module/file/entity/file.entity';
+import { RoleEntity } from '@/module/role/entity/role.entity';
+import { MenuEntity } from '@/module/menu/entity/menu.entity';
 
 @Provide()
 export class AuthService {
   @InjectEntityModel(UserEntity)
   userModal: Repository<UserEntity>;
+
+  @InjectEntityModel(UserRoleEntity)
+  userRoleModal: Repository<UserRoleEntity>;
+
+  @InjectEntityModel(RoleMenuEntity)
+  roleMenuModel: Repository<RoleMenuEntity>;
+
+  @InjectEntityModel(MenuEntity)
+  menuModel: Repository<MenuEntity>;
 
   @Config('token')
   tokenConfig: TokenConfig;
@@ -177,5 +191,47 @@ export class AuthService {
         ),
       ]);
     });
+  }
+
+  async getUserById(userId: string) {
+    const entity = await this.userModal
+      .createQueryBuilder('t')
+      .leftJoinAndSelect(UserRoleEntity, 'userRole', 't.id = userRole.user_id')
+      .leftJoinAndMapOne(
+        't.avatarEntity',
+        FileEntity,
+        'file',
+        'file.pk_value = t.id and file.pk_name = "my_user&user_avatar"'
+      )
+      .leftJoinAndMapMany(
+        't.roles',
+        RoleEntity,
+        'role',
+        'role.id = userRole.role_id'
+      )
+      .where('t.id = :id', { id: userId })
+      .getOne();
+
+    if (!entity) {
+      throw R.error('当前用户不存在！');
+    }
+
+    // 先把用户分配的角色查出来
+    const userRoles = await this.userRoleModal.findBy({ userId: userId });
+    // 根据已分配角色查询已分配的菜单id数组
+    const roleMenus = await this.roleMenuModel.find({
+      where: { roleId: In(userRoles.map(userRole => userRole.roleId)) },
+    });
+    // 根据菜单id数组查询菜单信息，这里加了个特殊判断，如果是管理员直接返回全部菜单，正常这个应该走数据迁移，数据迁移还没做，就先用这种方案。
+    const query = { id: In(roleMenus.map(roleMenu => roleMenu.menuId)) };
+    const menus = await this.menuModel.find({
+      where: userId === '1' ? {} : query,
+      order: { orderNumber: 'ASC', createdDate: 'DESC' },
+    });
+
+    return {
+      ...entity.toVO(),
+      menus,
+    };
   }
 }
